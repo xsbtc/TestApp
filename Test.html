@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MetaMask Interaction</title>
+    <script src="https://cdn.jsdelivr.net/npm/ethers@5.0.0/dist/ethers.umd.min.js"></script>
+    <style>
+        /* 页面基础样式 */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f8f1f9;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        /* 中心化容器 */
+        .container {
+            background-color: #fff;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        h1 {
+            color: #f36f6f;
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+
+        .input-container {
+            margin: 15px 0;
+        }
+
+        input {
+            width: 100%;
+            padding: 10px;
+            margin-top: 8px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+
+        button {
+            background-color: #f36f6f;
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 20px;
+        }
+
+        button:hover {
+            background-color: #f15a5a;
+        }
+
+        .alt-login {
+            margin-top: 20px;
+        }
+
+        .alt-login a {
+            color: #f36f6f;
+            text-decoration: none;
+            font-size: 14px;
+        }
+
+        .alt-login a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>欢迎回来！准备好继续你的学习旅程了吗？</h1>
+
+        <!-- MetaMask连接按钮 -->
+        <button id="connectButton">Connect MetaMask</button>
+
+        <!-- 输入框 -->
+        <div class="input-container">
+            <label for="numInput">请输入一个数字：</label>
+            <input type="number" id="numInput" placeholder="请输入一个数字" />
+        </div>
+
+        <!-- 提交按钮 -->
+        <button id="submitButton">提交</button>
+
+        <!-- 查询按钮 -->
+        <button id="retrieveButton">查询当前数字</button>
+
+        <!-- 可选其他登录方式 -->
+        <div class="alt-login">
+            <a href="#">或使用其他方式登录</a>
+        </div>
+    </div>
+
+    <script>
+        // 合约的ABI和地址
+        const abi = [
+            "function store(uint256 num) public",
+            "function retrieve() public view returns (uint256)"
+        ];
+        const contractAddress = "0x1d46E696E65EC1F35a41bDB64b51C9464d2A053c";  // 替换成你的合约地址
+
+        let provider;
+        let signer;
+        let contract;
+
+        // 获取按钮元素
+        const connectButton = document.getElementById('connectButton');
+        const submitButton = document.getElementById('submitButton');
+        const retrieveButton = document.getElementById('retrieveButton');
+        const numInput = document.getElementById('numInput');
+
+        // 连接到MetaMask
+        connectButton.addEventListener('click', async () => {
+            if (window.ethereum) {
+                // 请求用户连接MetaMask
+                try {
+                    await window.ethereum.request({ method: 'eth_requestAccounts' });
+                    // 使用 Web3Provider 来连接MetaMask
+                    provider = new ethers.providers.Web3Provider(window.ethereum);
+                    signer = provider.getSigner();
+                    contract = new ethers.Contract(contractAddress, abi, signer);
+                    alert('MetaMask Connected!');
+                } catch (error) {
+                    console.error(error);
+                    alert('MetaMask Connection Failed!');
+                }
+            } else {
+                alert('Please install MetaMask!');
+            }
+        });
+
+        // 提交按钮点击事件
+        submitButton.addEventListener('click', async () => {
+            const value = numInput.value;
+            if (!value || isNaN(value)) {
+                alert('请输入一个有效的数字!');
+                return;
+            }
+
+            try {
+                // 调用store函数修改数字
+                const tx = await contract.store(ethers.BigNumber.from(value));
+                console.log(`Transaction Hash: ${tx.hash}`);
+                alert(`交易成功！哈希值：${tx.hash}`);
+                await tx.wait();  // 等待交易确认
+            } catch (error) {
+                console.error(error);
+                alert('交易失败!');
+            }
+        });
+
+        // 查询当前数字按钮点击事件
+        retrieveButton.addEventListener('click', async () => {
+            try {
+                const number = await contract.retrieve();
+                alert(`当前存储的数字是：${number.toString()}`);
+            } catch (error) {
+                console.error(error);
+                alert('无法查询数字!');
+            }
+        });
+    </script>
+</body>
+</html>
